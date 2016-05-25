@@ -47,14 +47,18 @@ function processComments(post){
 
 var goodbye = /^goodbye/i;
 
+function getBody(comment){
+	return comment && comment.body.trim().toUpperCase();
+}
+
 function getOuijaLetters(comment){
-	var body = comment.body.trim().toUpperCase(),
+	var body = getBody(comment),
 		letters = [];
 
 	while (body && body.length === 1){
 		letters.push(body);
 		comment = comment.replies[0];
-		body = comment && comment.body.trim().toUpperCase();
+		body = getBody(comment);
 		if (goodbye.test(body) && comment.score > 1){
 			return letters;
 		}
