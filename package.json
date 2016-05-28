@@ -4,8 +4,7 @@
   "description": "a bot for /r/AskOuija",
   "main": "ouija.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ouija.js"
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",

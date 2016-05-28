@@ -17,11 +17,6 @@ const r = new snoowrap(config);
 
 var sId = process.argv[2];
 
-const SECOND = 1000;
-const MINUTE = 60 * SECOND;
-
-var interval = 30 * MINUTE;
-
 if (sId){
 	processPost(r.get_submission(sId));
 } else {
