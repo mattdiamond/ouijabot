@@ -1,5 +1,15 @@
-var snoowrap = require('snoowrap'),
+var snoowrap = require('snoowrap'), config;
+
+if (process.env.client_id){
+	config = {
+		client_id: process.env.client_id,
+		client_secret: process.env.client_secret,
+		refresh_token: process.env.refresh_token,
+		user_agent: 'OuijaBot'
+	};
+} else {
 	config = require('./config.js');
+}
 
 const OUIJA_RESULT_CLASS = 'ouija-result';
 
@@ -7,9 +17,20 @@ const r = new snoowrap(config);
 
 var sId = process.argv[2];
 
+const SECOND = 1000;
+const MINUTE = 60 * SECOND;
+
+var interval = 30 * MINUTE;
+
 if (sId){
 	processPost(r.get_submission(sId));
 } else {
+	checkHot();
+	setInterval(checkHot, interval);
+}
+
+function checkHot(){
+	console.log('checking hot posts');
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
 		hot.forEach(processPost);
 	});
