@@ -26,7 +26,6 @@ if (sId){
 	processPost(r.get_submission(sId));
 } else {
 	checkHot();
-	setInterval(checkHot, interval);
 }
 
 function checkHot(){
