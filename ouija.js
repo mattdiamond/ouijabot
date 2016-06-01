@@ -24,7 +24,7 @@ if (sId){
 }
 
 function checkHot(){
-	console.log('checking hot posts');
+	console.log('checking last 100 hot posts');
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
 		hot.forEach(processPost);
 	});
@@ -60,7 +60,7 @@ function processComments(post){
 	}
 }
 
-var goodbye = /^goodbye/i;
+var goodbye = /^GOODBYE/;
 
 function getBody(comment){
 	return comment && comment.body.trim().toUpperCase();
