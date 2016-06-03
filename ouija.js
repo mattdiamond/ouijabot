@@ -41,7 +41,7 @@ function processComments(post){
 	var length = post.comments.length,
 		letters;
 
-	for (let i = 0; i < length; i++){
+	for (var i = 0; i < length; i++){
 		letters = getOuijaLetters(post.comments[i]);
 		if (letters){
 			updatePostFlair(post, letters);
