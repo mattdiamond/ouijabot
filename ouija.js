@@ -38,15 +38,21 @@ function processPost(post){
 }
 
 function processComments(post){
-	var i = 0, comment, letters;
+	var length = post.comments.length,
+		letters;
 
-	while (!letters){
-		comment = post.comments[i++];
-		if (!comment) return;
-		letters = getOuijaLetters(comment);
+	for (let i = 0; i < length; i++){
+		letters = getOuijaLetters(post.comments[i]);
+		if (letters){
+			updatePostFlair(post, letters);
+			return;
+		}
 	}
+}
 
+function updatePostFlair(post, letters){
 	var text = 'Ouija says: ' + letters.join('');
+
 	if (post.link_flair_text == text){
 		console.log('confirmed flair: ' + text);
 	} else {
