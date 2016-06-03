@@ -23,14 +23,14 @@ if (sId){
 	checkHot();
 }
 
+// *********** FUNCTIONS *************
+
 function checkHot(){
 	console.log('checking last 100 hot posts');
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
 		hot.forEach(processPost);
 	});
 }
-
-// *********** FUNCTIONS *************
 
 function processPost(post){
 	if (post.link_flair_text) return;
