@@ -19,7 +19,7 @@ if (process.env.client_id){
 
 const
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = 5;
+	COMMENT_SCORE_THRESHOLD = process.env.threshold;
 
 var
 	r = new snoowrap(config),
