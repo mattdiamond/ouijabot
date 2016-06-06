@@ -89,7 +89,7 @@ function getOuijaLetters(comment){
 		letters.push(body);
 		comment = comment.replies[0];
 		body = getBody(comment);
-		if (goodbye.test(body) && comment.score > 1){
+		if (goodbye.test(body) && comment.score >= COMMENT_SCORE_THRESHOLD){
 			return letters;
 		}
 	}
