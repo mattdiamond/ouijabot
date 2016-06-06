@@ -1,4 +1,8 @@
-var snoowrap = require('snoowrap'), config;
+// ------------- includes ------------------
+var snoowrap = require('snoowrap');
+
+// -------------- config -------------------
+var config;
 
 if (process.env.client_id){
 	config = {
@@ -11,19 +15,26 @@ if (process.env.client_id){
 	config = require('./config.js');
 }
 
-const OUIJA_RESULT_CLASS = 'ouija-result';
+// -------- constants & variables ----------
 
-const r = new snoowrap(config);
+const
+	OUIJA_RESULT_CLASS = 'ouija-result',
+	COMMENT_SCORE_THRESHOLD = 3;
 
-var sId = process.argv[2];
+var
+	r = new snoowrap(config),
+	submissionId = process.argv[2],
+	goodbye = /^GOODBYE/;
 
-if (sId){
-	processPost(r.get_submission(sId));
+// -------------- { MAIN } -----------------
+
+if (submissionId){
+	processPost(r.get_submission(submissionId));
 } else {
 	checkHot();
 }
 
-// *********** FUNCTIONS *************
+// -------------- functions ----------------
 
 function checkHot(){
 	console.log('checking last 100 hot posts');
@@ -65,8 +76,6 @@ function updatePostFlair(post, letters){
 		console.log('assigned flair: ' + text);
 	}
 }
-
-var goodbye = /^GOODBYE/;
 
 function getBody(comment){
 	return comment && comment.body.trim().toUpperCase();
