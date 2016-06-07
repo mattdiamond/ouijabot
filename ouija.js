@@ -91,7 +91,12 @@ function getOuijaLetters(comment){
 		body = getBody(comment);
 	}
 
-	if (!goodbye.test(body) || comment.score < COMMENT_SCORE_THRESHOLD){
+	if (!goodbye.test(body)){
+		return false;
+	}
+
+	if (comment.score < COMMENT_SCORE_THRESHOLD){
+		console.log('below threshold: '+letters.join('')+' | '+comment.score+' points');
 		return false;
 	}
 
