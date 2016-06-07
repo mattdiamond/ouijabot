@@ -2,18 +2,12 @@
 var snoowrap = require('snoowrap');
 
 // -------------- config -------------------
-var config;
-
-if (process.env.client_id){
-	config = {
-		client_id: process.env.client_id,
-		client_secret: process.env.client_secret,
-		refresh_token: process.env.refresh_token,
-		user_agent: 'OuijaBot'
-	};
-} else {
-	config = require('./config.js');
-}
+const config = {
+	client_id: process.env.client_id,
+	client_secret: process.env.client_secret,
+	refresh_token: process.env.refresh_token,
+	user_agent: 'OuijaBot'
+};
 
 // -------- constants & variables ----------
 
