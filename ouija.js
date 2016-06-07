@@ -18,7 +18,8 @@ const
 var
 	r = new snoowrap(config),
 	submissionId = process.argv[2],
-	goodbye = /^GOODBYE/;
+	goodbye = /^GOODBYE/,
+	link = /\[(.+)\]\(.+\)/;
 
 // -------------- { MAIN } -----------------
 
@@ -72,7 +73,10 @@ function updatePostFlair(post, letters){
 }
 
 function getBody(comment){
-	return comment && comment.body.trim().toUpperCase();
+	if (!comment) return null;
+
+	var body = comment.body.trim().toUpperCase();
+	return body.replace(link, '$1');
 }
 
 function getOuijaLetters(comment){
