@@ -5,7 +5,8 @@ var snoowrap = require('snoowrap');
 const config = {
 	client_id: process.env.client_id,
 	client_secret: process.env.client_secret,
-	refresh_token: process.env.refresh_token,
+	username: process.env.username,
+	password: process.env.password,
 	user_agent: 'OuijaBot'
 };
 
@@ -45,19 +46,20 @@ function processPost(post){
 
 function processComments(post){
 	var length = post.comments.length,
-		letters;
+		response;
 
 	for (var i = 0; i < length; i++){
-		letters = getOuijaLetters(post.comments[i]);
-		if (letters){
-			updatePostFlair(post, letters);
+		response = getOuijaResponse(post.comments[i]);
+		if (response){
+			updatePostFlair(post, response);
 			return;
 		}
 	}
 }
 
-function updatePostFlair(post, letters){
-	var text = 'Ouija says: ' + letters.join('');
+function updatePostFlair(post, response){
+	var letters = response.letters,
+		text = 'Ouija says: ' + letters.join('');
 
 	if (post.link_flair_text == text){
 		console.log('confirmed flair: ' + text);
@@ -69,6 +71,8 @@ function updatePostFlair(post, letters){
 			console.error(err);
 		});
 		console.log('assigned flair: ' + text);
+
+		notifyUser(post, response);
 	}
 }
 
@@ -80,7 +84,7 @@ function getBody(comment){
 	return body.trim().toUpperCase();
 }
 
-function getOuijaLetters(comment){
+function getOuijaResponse(comment){
 	var body = getBody(comment),
 		letters = [];
 
@@ -99,5 +103,24 @@ function getOuijaLetters(comment){
 		return false;
 	}
 
-	return letters;
+	return {
+		letters,
+		goodbye: comment
+	};
+}
+
+function notifyUser(post, response){
+	var url = post.url + response.goodbye.id + '?context=999',
+		answer = response.letters.join('');
+
+	var text = `**You asked:** ${post.title}`;
+	text += "\n\n";
+	text += `**Ouija says:** [${answer}](${url})`;
+
+	r.compose_message({
+		to: post.author,
+		subject: 'THE OUIJA HAS SPOKEN',
+		text,
+		from_subreddit: 'AskOuija'
+	});
 }
