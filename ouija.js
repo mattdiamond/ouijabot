@@ -13,6 +13,7 @@ const config = {
 // -------- constants & variables ----------
 
 const
+	EOL = require('os').EOL,
 	OUIJA_RESULT_CLASS = 'ouija-result',
 	COMMENT_SCORE_THRESHOLD = process.env.threshold;
 
@@ -113,8 +114,8 @@ function notifyUser(post, response){
 	var url = post.url + response.goodbye.id + '?context=999',
 		answer = response.letters.join('');
 
-	var text = `**You asked:** ${post.title}`;
-	text += "\n\n";
+	var text = `**You asked:** ${post.title}` + EOL;
+	text += EOL;
 	text += `**Ouija says:** [${answer}](${url})`;
 
 	r.compose_message({
