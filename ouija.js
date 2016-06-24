@@ -81,7 +81,7 @@ function getBody(comment){
 
 	var body = comment.body.replace(link, '$1');
 	if (body === '[deleted]') return '*';
-	return body.trim().toUpperCase();
+	return body.replace(/\W/g, '').toUpperCase();
 }
 
 function getOuijaResponse(comment){
