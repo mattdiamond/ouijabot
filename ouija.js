@@ -41,7 +41,7 @@ function checkHot(){
 }
 
 function processPost(post){
-	if (post.link_flair_text) return;
+	if (post.link_flair_text && post.link_flair_text !== 'unanswered') return;
 	post.expand_replies().then(processComments);
 }
 
@@ -56,6 +56,11 @@ function processComments(post){
 			return;
 		}
 	}
+
+	post.assign_flair({
+		text: 'unanswered',
+		css_class: 'unanswered'
+	});
 }
 
 function updatePostFlair(post, response){
@@ -82,7 +87,7 @@ function getBody(comment){
 
 	var body = comment.body.replace(link, '$1');
 	if (body === '[deleted]') return '*';
-	return body.replace(/\W/g, '').toUpperCase();
+	return body.trim().toUpperCase();
 }
 
 function getOuijaResponse(comment){
