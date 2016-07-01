@@ -40,9 +40,14 @@ function checkHot(){
 	});
 }
 
+function isUnanswered(post){
+	return !post.link_flair_text || post.link_flair_text === 'unanswered';
+}
+
 function processPost(post){
-	if (post.link_flair_text && post.link_flair_text !== 'unanswered') return;
-	post.expand_replies().then(processComments);
+	if (isUnanswered(post)){
+		post.expand_replies().then(processComments);
+	}
 }
 
 function processComments(post){
@@ -57,10 +62,12 @@ function processComments(post){
 		}
 	}
 
-	post.assign_flair({
-		text: 'unanswered',
-		css_class: 'unanswered'
-	});
+	if (!post.link_flair_text){
+		post.assign_flair({
+			text: 'unanswered',
+			css_class: 'unanswered'
+		});
+	}
 }
 
 function updatePostFlair(post, response){
