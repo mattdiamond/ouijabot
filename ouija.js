@@ -33,10 +33,19 @@ if (submissionId){
 
 // -------------- functions ----------------
 
+Function.prototype.if = function(condition){
+	var func = this;
+	return function(){
+		if (condition.apply(this, arguments)){
+			return func.apply(this, arguments);
+		}
+	};
+};
+
 function checkHot(){
 	console.log('checking last 100 hot posts');
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
-		hot.forEach(processPost);
+		hot.forEach(processPost.if(isUnanswered));
 	});
 }
 
@@ -45,9 +54,7 @@ function isUnanswered(post){
 }
 
 function processPost(post){
-	if (isUnanswered(post)){
-		post.expand_replies().then(processComments);
-	}
+	post.expand_replies().then(processComments);
 }
 
 function processComments(post){
@@ -94,7 +101,7 @@ function getBody(comment){
 
 	var body = comment.body;
 	if (body === '[deleted]') return '*';
-	body = body.replace(link, '$1');
+	body = body.replace(link, '$1').trim();
 	if (body.length > 1){
 		body = body.replace(/\W/g, '');
 	}
