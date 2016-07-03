@@ -92,9 +92,13 @@ function updatePostFlair(post, response){
 function getBody(comment){
 	if (!comment) return null;
 
-	var body = comment.body.replace(link, '$1');
+	var body = comment.body;
 	if (body === '[deleted]') return '*';
-	return body.trim().toUpperCase();
+	body = body.replace(link, '$1');
+	if (body.length > 1){
+		body = body.replace(/\W/g, '');
+	}
+	return body.toUpperCase();
 }
 
 function getOuijaResponse(comment){
