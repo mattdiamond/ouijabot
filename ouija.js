@@ -105,6 +105,7 @@ function getBody(comment){
 	if (body.length > 1){
 		body = body.replace(/\W/g, '');
 	}
+	if (body === 'ß') return body;
 	return body.toUpperCase();
 }
 
