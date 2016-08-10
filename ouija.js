@@ -58,11 +58,10 @@ function processPost(post){
 }
 
 function processComments(post){
-	var length = post.comments.length,
-		response;
+	var response;
 
-	for (var i = 0; i < length; i++){
-		response = getOuijaResponse(post.comments[i]);
+	for (var comment of post.comments){
+		response = getOuijaResponse.call(post, comment);
 		if (response){
 			updatePostFlair(post, response);
 			return;
@@ -80,6 +79,10 @@ function processComments(post){
 function updatePostFlair(post, response){
 	var letters = response.letters,
 		text = 'Ouija says: ' + letters.join('');
+
+	if (text.length > 64){
+		text = text.substr(0, 61) + '...';
+	}
 
 	if (post.link_flair_text == text){
 		console.log('confirmed flair: ' + text);
@@ -109,29 +112,30 @@ function getBody(comment){
 	return body.toUpperCase();
 }
 
-function getOuijaResponse(comment){
+function getOuijaResponse(comment, letters){
 	var body = getBody(comment),
-		letters = [];
+		letters = letters || [],
+		response;
 
-	while (body && body.length === 1){
+	if (body.length === 1){
 		letters.push(body);
-		comment = comment.replies[0];
-		body = getBody(comment);
+		for (var reply of comment.replies){
+			response = getOuijaResponse.call(this, reply, letters);
+			if (response) return response;
+		}
+		letters.pop();
+	} else if (goodbye.test(body)){
+		if (comment.score >= COMMENT_SCORE_THRESHOLD){
+			return {
+				letters,
+				goodbye: comment
+			};
+		} else {
+			console.log('almost there: ' + letters.join('') + ' | ' + comment.score + ' points | ' + this.url);
+		}
 	}
 
-	if (!goodbye.test(body)){
-		return false;
-	}
-
-	if (comment.score < COMMENT_SCORE_THRESHOLD){
-		console.log('below threshold: '+letters.join('')+' | '+comment.score+' points');
-		return false;
-	}
-
-	return {
-		letters,
-		goodbye: comment
-	};
+	return false;
 }
 
 function notifyUser(post, response){
