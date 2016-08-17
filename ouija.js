@@ -93,7 +93,7 @@ function updatePostFlair(post, response){
 		}).catch(err => {
 			console.error(err);
 		});
-		console.log('assigned flair: ' + text);
+		console.log('assigned flair: ' + text + ' | ' + post.url);
 
 		notifyUser(post, response);
 	}
