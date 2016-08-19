@@ -68,7 +68,7 @@ function processComments(post){
 		}
 	}
 
-	if (!post.link_flair_text){
+	if (post.link_flair_text !== 'unanswered'){
 		post.assign_flair({
 			text: 'unanswered',
 			css_class: 'unanswered'
