@@ -58,10 +58,11 @@ function processPost(post){
 }
 
 function processComments(post){
-	var response;
+	var context = { post, config: parseConfig(post.selftext) },
+		response;
 
 	for (var comment of post.comments){
-		response = getOuijaResponse.call(post, comment);
+		response = getOuijaResponse.call(context, comment);
 		if (response){
 			updatePostFlair(post, response);
 			return;
@@ -74,6 +75,17 @@ function processComments(post){
 			css_class: 'unanswered'
 		});
 	}
+}
+
+function parseConfig(input){
+	var regex = /(\w+)\s*:\s*(\w+)/g,
+		config = {}, parsed;
+
+	while ((parsed = regex.exec(input)) !== null){
+		config[parsed[1]] = parsed[2];
+	}
+
+	return config;
 }
 
 function updatePostFlair(post, response){
@@ -125,13 +137,15 @@ function getOuijaResponse(comment, letters){
 		}
 		letters.pop();
 	} else if (goodbye.test(body)){
-		if (comment.score >= COMMENT_SCORE_THRESHOLD){
+		var threshold = this.config.minscore || COMMENT_SCORE_THRESHOLD;
+
+		if (comment.score >= threshold){
 			return {
 				letters,
 				goodbye: comment
 			};
 		} else {
-			console.log('almost there: ' + letters.join('') + ' | ' + comment.score + ' points | ' + this.url);
+			console.log('below threshold: ' + letters.join('') + ' | ' + comment.score + ' points | ' + this.post.url);
 		}
 	}
 
