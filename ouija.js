@@ -33,20 +33,45 @@ if (submissionId){
 
 // -------------- functions ----------------
 
-Function.prototype.if = function(condition){
-	var func = this;
-	return function(){
-		if (condition.apply(this, arguments)){
-			return func.apply(this, arguments);
-		}
-	};
-};
-
 function checkHot(){
 	console.log('checking last 100 hot posts');
+	var processing = [];
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
-		hot.forEach(processPost.if(isUnanswered));
+		hot.forEach(post => {
+			if (isUnanswered(post)){
+				processing.push(processPost(post));
+			}
+		});
+		Promise.all(processing).then(processPending);
 	});
+}
+
+function processPending(posts){
+	var text = '';
+
+	posts.reverse().forEach(post => {
+		if (post.answered || !post.pendingGoodbyes.length) return;
+
+		text += createWikiMarkdown(post);
+	});
+
+	var pending = r.get_subreddit('AskOuija').get_wiki_page('pending');
+	pending.edit({ text });
+}
+
+function createWikiMarkdown(post){
+	var markdown = `#### [${post.title}](${post.url})` + EOL;
+	markdown += 'Letters | Score' + EOL;
+	markdown += '--------|------' + EOL;
+	post.pendingGoodbyes.forEach(pending => {
+		var answer = pending.letters.join('') || '[blank]',
+			url = post.url + pending.goodbye.id + '?context=999',
+			score = pending.goodbye.score;
+
+		markdown += `[${answer}](${url}) | ${score}` + EOL;
+	});
+
+	return markdown;
 }
 
 function isUnanswered(post){
@@ -54,18 +79,21 @@ function isUnanswered(post){
 }
 
 function processPost(post){
-	post.expand_replies().then(processComments);
+	return post.expand_replies().then(processComments);
 }
 
 function processComments(post){
 	var context = { post, config: parseConfig(post.selftext) },
 		response;
 
+	post.pendingGoodbyes = [];
+
 	for (var comment of post.comments){
 		response = getOuijaResponse.call(context, comment);
 		if (response){
 			updatePostFlair(post, response);
-			return;
+			post.answered = true;
+			return post;
 		}
 	}
 
@@ -75,6 +103,8 @@ function processComments(post){
 			css_class: 'unanswered'
 		});
 	}
+
+	return post;
 }
 
 function parseConfig(input){
@@ -146,6 +176,10 @@ function getOuijaResponse(comment, letters){
 			};
 		} else {
 			console.log('below threshold: ' + letters.join('') + ' | ' + comment.score + ' points | ' + this.post.url);
+			this.post.pendingGoodbyes.push({
+				letters: letters.slice(),
+				goodbye: comment
+			});
 		}
 	}
 
