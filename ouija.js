@@ -15,7 +15,8 @@ const config = {
 const
 	EOL = require('os').EOL,
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = process.env.threshold;
+	COMMENT_SCORE_THRESHOLD = process.env.threshold,
+	INVALID = 0;
 
 var
 	r = new snoowrap(config),
@@ -50,25 +51,47 @@ function processPending(posts){
 	var text = '';
 
 	posts.reverse().forEach(post => {
-		if (post.answered || !post.pendingGoodbyes.length) return;
+		if (post.answered) return;
+		if (!post.answers.pending.length && !post.answers.incomplete.length) return;
 
-		text += createWikiMarkdown(post);
+		text += `### [${post.title}](${post.url})` + EOL;
+
+		if (post.answers.pending.length){
+			text += createPendingWikiMarkdown(post);
+		}
+		if (post.answers.incomplete.length){
+			text += createIncompleteWikiMarkdown(post);
+		}
 	});
 
-	var pending = r.get_subreddit('AskOuija').get_wiki_page('pending');
-	pending.edit({ text });
+	var wiki = r.get_subreddit('AskOuija').get_wiki_page('unanswered');
+	wiki.edit({ text });
 }
 
-function createWikiMarkdown(post){
-	var markdown = `### [${post.title}](${post.url})` + EOL;
+function createPendingWikiMarkdown(post){
+	var markdown = '#### Pending' + EOL;
 	markdown += 'Letters | Score' + EOL;
 	markdown += '--------|------' + EOL;
-	post.pendingGoodbyes.forEach(pending => {
+	post.answers.pending.forEach(pending => {
 		var answer = pending.letters.join('') || '[blank]',
 			url = post.url + pending.goodbye.id + '?context=999',
 			score = pending.goodbye.score;
 
 		markdown += `[${answer}](${url}) | ${score}` + EOL;
+	});
+
+	return markdown;
+}
+
+function createIncompleteWikiMarkdown(post){
+	var markdown = '#### Incomplete' + EOL;
+	markdown += 'Letters |' + EOL;
+	markdown += '--------|' + EOL;
+	post.answers.incomplete.forEach(sequence => {
+		var answer = sequence.letters.join(''),
+			url = post.url + sequence.lastComment.id + '?context=999';
+
+		markdown += `[${answer}](${url}) |` + EOL;
 	});
 
 	return markdown;
@@ -86,7 +109,10 @@ function processComments(post){
 	var context = { post, config: parseConfig(post.selftext) },
 		response;
 
-	post.pendingGoodbyes = [];
+	post.answers = {
+		pending: [],
+		incomplete: []
+	};
 
 	for (var comment of post.comments){
 		response = getOuijaResponse.call(context, comment);
@@ -157,6 +183,7 @@ function getBody(comment){
 function getOuijaResponse(comment, letters){
 	var body = getBody(comment),
 		letters = letters || [],
+		hasChildren = false,
 		response;
 
 	if (body.length === 1){
@@ -164,6 +191,13 @@ function getOuijaResponse(comment, letters){
 		for (var reply of comment.replies){
 			response = getOuijaResponse.call(this, reply, letters);
 			if (response) return response;
+			if (response !== INVALID) hasChildren = true;
+		}
+		if (!hasChildren){
+			this.post.answers.incomplete.push({
+				letters: letters.slice(),
+				lastComment: comment
+			});
 		}
 		letters.pop();
 	} else if (goodbye.test(body)){
@@ -176,14 +210,14 @@ function getOuijaResponse(comment, letters){
 			};
 		} else {
 			console.log('below threshold: ' + letters.join('') + ' | ' + comment.score + ' points | ' + this.post.url);
-			this.post.pendingGoodbyes.push({
+			this.post.answers.pending.push({
 				letters: letters.slice(),
 				goodbye: comment
 			});
 		}
+	} else {
+		return INVALID;
 	}
-
-	return false;
 }
 
 function notifyUser(post, response){
