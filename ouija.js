@@ -60,7 +60,7 @@ function processPending(posts){
 }
 
 function createWikiMarkdown(post){
-	var markdown = `#### [${post.title}](${post.url})` + EOL;
+	var markdown = `### [${post.title}](${post.url})` + EOL;
 	markdown += 'Letters | Score' + EOL;
 	markdown += '--------|------' + EOL;
 	post.pendingGoodbyes.forEach(pending => {
