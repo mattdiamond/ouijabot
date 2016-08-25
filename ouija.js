@@ -167,13 +167,19 @@ function updatePostFlair(post, response){
 	}
 }
 
+//awesome workaround from https://mathiasbynens.be/notes/javascript-unicode
+//for getting accurate character count even when handling emojis
+function countSymbols(string) {
+	return Array.from(string).length;
+}
+
 function getBody(comment){
 	if (!comment) return null;
 
 	var body = comment.body;
 	if (body === '[deleted]') return '*';
 	body = body.replace(link, '$1').trim();
-	if (body.length > 1){
+	if (countSymbols(body) > 1){
 		body = body.replace(/\W/g, '');
 	}
 	if (body === 'ß') return body;
@@ -186,7 +192,7 @@ function getOuijaResponse(comment, letters){
 		hasChildren = false,
 		response;
 
-	if (body.length === 1){
+	if (countSymbols(body) === 1){
 		letters.push(body);
 		for (var reply of comment.replies){
 			response = getOuijaResponse.call(this, reply, letters);
