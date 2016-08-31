@@ -39,12 +39,28 @@ function checkHot(){
 	var processing = [];
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
 		hot.forEach(post => {
-			if (isUnanswered(post)){
+			if (needsProcessing(post)){
 				processing.push(processPost(post));
 			}
 		});
 		Promise.all(processing).then(processPending);
 	});
+}
+
+function needsProcessing(post){
+	return isUnanswered(post) || reportedIncorrectFlair(post);
+}
+
+function reportedIncorrectFlair(post){
+	for (var userReport of post.user_reports){
+		if (userReport[0] === 'Missing or Incorrect Flair') return true;
+	}
+
+	return false;
+}
+
+function isUnanswered(post){
+	return !post.link_flair_text || post.link_flair_text === 'unanswered';
 }
 
 function processPending(posts){
@@ -95,10 +111,6 @@ function createIncompleteWikiMarkdown(post){
 	});
 
 	return markdown;
-}
-
-function isUnanswered(post){
-	return !post.link_flair_text || post.link_flair_text === 'unanswered';
 }
 
 function processPost(post){
@@ -164,6 +176,10 @@ function updatePostFlair(post, response){
 		console.log('assigned flair: ' + text + ' | ' + post.url);
 
 		notifyUser(post, response);
+
+		if (reportedIncorrectFlair(post)){
+			post.approve();
+		}
 	}
 }
 
