@@ -30,6 +30,7 @@ if (submissionId){
 	processPost(r.get_submission(submissionId));
 } else {
 	checkHot();
+	checkReported();
 }
 
 // -------------- functions ----------------
@@ -39,7 +40,7 @@ function checkHot(){
 	var processing = [];
 	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
 		hot.forEach(post => {
-			if (needsProcessing(post)){
+			if (isUnanswered(post)){
 				processing.push(processPost(post));
 			}
 		});
@@ -47,8 +48,15 @@ function checkHot(){
 	});
 }
 
-function needsProcessing(post){
-	return isUnanswered(post) || reportedIncorrectFlair(post);
+function checkReported(){
+	var getReports = r.get_subreddit('AskOuija').get_reports({ only: 'links' });
+	getReports.then(reports => {
+		reports.forEach(post => {
+			if (reportedIncorrectFlair(post)){
+				processPost(post);
+			}
+		});
+	});
 }
 
 function reportedIncorrectFlair(post){
