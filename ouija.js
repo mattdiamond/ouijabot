@@ -91,7 +91,9 @@ function checkHot(){
 				processing.push(processPost(post));
 			}
 		});
-		Promise.all(processing).then(processPending);
+		Promise.all(processing).then(processPending).catch(err => {
+			console.error(err);
+		});
 	});
 }
 
@@ -125,7 +127,7 @@ function processPending(queries){
 		if (query.answered) return;
 		if (!query.responses.complete.length && !query.responses.incomplete.length) return;
 
-		text += `### [${post.title}](${post.url})` + EOL;
+		text += `### [${query.post.title}](${query.post.url})` + EOL;
 
 		if (query.responses.complete.length){
 			text += createPendingWikiMarkdown(query);
@@ -145,7 +147,7 @@ function createPendingWikiMarkdown(query){
 	markdown += '--------|------' + EOL;
 	query.responses.complete.forEach(pending => {
 		var answer = pending.letters.join('') || '[blank]',
-			url = post.url + pending.goodbye.id + '?context=999',
+			url = query.post.url + pending.goodbye.id + '?context=999',
 			score = pending.goodbye.score;
 
 		markdown += `[${answer}](${url}) | ${score}` + EOL;
@@ -160,7 +162,7 @@ function createIncompleteWikiMarkdown(query){
 	markdown += '--------|' + EOL;
 	query.responses.incomplete.forEach(sequence => {
 		var answer = sequence.letters.join(''),
-			url = post.url + sequence.lastComment.id + '?context=999';
+			url = query.post.url + sequence.lastComment.id + '?context=999';
 
 		markdown += `[${answer}](${url}) |` + EOL;
 	});
