@@ -33,6 +33,53 @@ if (submissionId){
 	checkReported();
 }
 
+// --------------- classes -----------------
+
+function OuijaQuery(post){
+	this.post = post;
+	this.config = parseConfig(post.selftext);
+
+	this.responses = {
+		complete: [],
+		incomplete: []
+	};
+
+	this.answered = false;
+}
+
+OuijaQuery.prototype.run = function(){
+	for (var comment of this.post.comments){
+		this.collectResponses(comment);
+	}
+
+	var response = this.getResponse();
+	if (response) this.answered = true;
+	return response;
+};
+
+OuijaQuery.prototype.getTopCompletedResponse = function(){
+	var top = null;
+	this.responses.complete.forEach(response => {
+		if (!top || response.goodbye.score > top.goodbye.score){
+			top = response;
+		}
+	});
+	return top;
+};
+
+OuijaQuery.prototype.getThreshold = function(){
+	return this.config.minscore || COMMENT_SCORE_THRESHOLD;
+};
+
+OuijaQuery.prototype.getResponse = function(){
+	var topResponse = this.getTopCompletedResponse();
+	if (topResponse && topResponse.goodbye.score > this.getThreshold()){
+		return topResponse;
+	} else {
+		return null;
+	}
+};
+
 // -------------- functions ----------------
 
 function checkHot(){
@@ -71,20 +118,20 @@ function isUnanswered(post){
 	return !post.link_flair_text || post.link_flair_text === 'unanswered';
 }
 
-function processPending(posts){
+function processPending(queries){
 	var text = '';
 
-	posts.reverse().forEach(post => {
-		if (post.answered) return;
-		if (!post.answers.pending.length && !post.answers.incomplete.length) return;
+	queries.reverse().forEach(query => {
+		if (query.answered) return;
+		if (!query.responses.complete.length && !query.responses.incomplete.length) return;
 
 		text += `### [${post.title}](${post.url})` + EOL;
 
-		if (post.answers.pending.length){
-			text += createPendingWikiMarkdown(post);
+		if (query.responses.complete.length){
+			text += createPendingWikiMarkdown(query);
 		}
-		if (post.answers.incomplete.length){
-			text += createIncompleteWikiMarkdown(post);
+		if (query.responses.incomplete.length){
+			text += createIncompleteWikiMarkdown(query);
 		}
 	});
 
@@ -92,11 +139,11 @@ function processPending(posts){
 	wiki.edit({ text });
 }
 
-function createPendingWikiMarkdown(post){
+function createPendingWikiMarkdown(query){
 	var markdown = '#### Pending' + EOL;
 	markdown += 'Letters | Score' + EOL;
 	markdown += '--------|------' + EOL;
-	post.answers.pending.forEach(pending => {
+	query.responses.complete.forEach(pending => {
 		var answer = pending.letters.join('') || '[blank]',
 			url = post.url + pending.goodbye.id + '?context=999',
 			score = pending.goodbye.score;
@@ -107,11 +154,11 @@ function createPendingWikiMarkdown(post){
 	return markdown;
 }
 
-function createIncompleteWikiMarkdown(post){
+function createIncompleteWikiMarkdown(query){
 	var markdown = '#### Incomplete' + EOL;
 	markdown += 'Letters |' + EOL;
 	markdown += '--------|' + EOL;
-	post.answers.incomplete.forEach(sequence => {
+	query.responses.incomplete.forEach(sequence => {
 		var answer = sequence.letters.join(''),
 			url = post.url + sequence.lastComment.id + '?context=999';
 
@@ -122,35 +169,23 @@ function createIncompleteWikiMarkdown(post){
 }
 
 function processPost(post){
-	return post.expand_replies().then(processComments);
+	return post.expand_replies().then(runQuery);
 }
 
-function processComments(post){
-	var context = { post, config: parseConfig(post.selftext) },
-		response;
+function runQuery(post){
+	var query = new OuijaQuery(post);
 
-	post.answers = {
-		pending: [],
-		incomplete: []
-	};
-
-	for (var comment of post.comments){
-		response = getOuijaResponse.call(context, comment);
-		if (response){
-			updatePostFlair(post, response);
-			post.answered = true;
-			return post;
-		}
-	}
-
-	if (post.link_flair_text !== 'unanswered'){
+	var response = query.run();
+	if (response){
+		updatePostFlair(post, response);
+	} else if (post.link_flair_text !== 'unanswered') {
 		post.assign_flair({
 			text: 'unanswered',
 			css_class: 'unanswered'
 		});
 	}
 
-	return post;
+	return query;
 }
 
 function parseConfig(input){
@@ -210,7 +245,7 @@ function getBody(comment){
 	return body.toUpperCase();
 }
 
-function getOuijaResponse(comment, letters){
+OuijaQuery.prototype.collectResponses = function(comment, letters){
 	var body = getBody(comment),
 		letters = letters || [],
 		hasChildren = false,
@@ -219,32 +254,21 @@ function getOuijaResponse(comment, letters){
 	if (countSymbols(body) === 1){
 		letters.push(body);
 		for (var reply of comment.replies){
-			response = getOuijaResponse.call(this, reply, letters);
-			if (response) return response;
+			response = this.collectResponses(reply, letters);
 			if (response !== INVALID) hasChildren = true;
 		}
 		if (!hasChildren){
-			this.post.answers.incomplete.push({
+			this.responses.incomplete.push({
 				letters: letters.slice(),
 				lastComment: comment
 			});
 		}
 		letters.pop();
 	} else if (goodbye.test(body)){
-		var threshold = this.config.minscore || COMMENT_SCORE_THRESHOLD;
-
-		if (comment.score >= threshold){
-			return {
-				letters,
-				goodbye: comment
-			};
-		} else {
-			console.log('below threshold: ' + letters.join('') + ' | ' + comment.score + ' points | ' + this.post.url);
-			this.post.answers.pending.push({
-				letters: letters.slice(),
-				goodbye: comment
-			});
-		}
+		this.responses.complete.push({
+			letters: letters.slice(),
+			goodbye: comment
+		});
 	} else {
 		return INVALID;
 	}
