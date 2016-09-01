@@ -16,7 +16,7 @@ const
 	EOL = require('os').EOL,
 	OUIJA_RESULT_CLASS = 'ouija-result',
 	COMMENT_SCORE_THRESHOLD = process.env.threshold,
-	INVALID = 0;
+	INVALID = 'invalid';
 
 var
 	r = new snoowrap(config),
