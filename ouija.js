@@ -80,6 +80,35 @@ OuijaQuery.prototype.getResponse = function(){
 	}
 };
 
+OuijaQuery.prototype.collectResponses = function(comment, letters){
+	var body = getBody(comment),
+		letters = letters || [],
+		hasChildren = false,
+		response;
+
+	if (countSymbols(body) === 1){
+		letters.push(body);
+		for (var reply of comment.replies){
+			response = this.collectResponses(reply, letters);
+			if (response !== INVALID) hasChildren = true;
+		}
+		if (!hasChildren){
+			this.responses.incomplete.push({
+				letters: letters.slice(),
+				lastComment: comment
+			});
+		}
+		letters.pop();
+	} else if (goodbye.test(body)){
+		this.responses.complete.push({
+			letters: letters.slice(),
+			goodbye: comment
+		});
+	} else {
+		return INVALID;
+	}
+};
+
 // -------------- functions ----------------
 
 function checkHot(){
@@ -245,35 +274,6 @@ function getBody(comment){
 	}
 	if (body === 'ß') return body;
 	return body.toUpperCase();
-}
-
-OuijaQuery.prototype.collectResponses = function(comment, letters){
-	var body = getBody(comment),
-		letters = letters || [],
-		hasChildren = false,
-		response;
-
-	if (countSymbols(body) === 1){
-		letters.push(body);
-		for (var reply of comment.replies){
-			response = this.collectResponses(reply, letters);
-			if (response !== INVALID) hasChildren = true;
-		}
-		if (!hasChildren){
-			this.responses.incomplete.push({
-				letters: letters.slice(),
-				lastComment: comment
-			});
-		}
-		letters.pop();
-	} else if (goodbye.test(body)){
-		this.responses.complete.push({
-			letters: letters.slice(),
-			goodbye: comment
-		});
-	} else {
-		return INVALID;
-	}
 }
 
 function notifyUser(post, response){
