@@ -73,7 +73,7 @@ OuijaQuery.prototype.getThreshold = function(){
 
 OuijaQuery.prototype.getResponse = function(){
 	var topResponse = this.getTopCompletedResponse();
-	if (topResponse && topResponse.goodbye.score > this.getThreshold()){
+	if (topResponse && topResponse.goodbye.score >= this.getThreshold()){
 		return topResponse;
 	} else {
 		return null;
