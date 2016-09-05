@@ -154,7 +154,6 @@ function processPending(queries){
 
 	queries.reverse().forEach(query => {
 		if (query.answered) return;
-		if (!query.responses.complete.length && !query.responses.incomplete.length) return;
 
 		text += `### [${query.post.title}](${query.post.url})` + EOL;
 
