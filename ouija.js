@@ -1,5 +1,6 @@
 // ------------- includes ------------------
-var snoowrap = require('snoowrap');
+var snoowrap = require('snoowrap'),
+	moment = require('moment');
 
 // -------------- config -------------------
 const config = {
@@ -72,12 +73,25 @@ OuijaQuery.prototype.getThreshold = function(){
 };
 
 OuijaQuery.prototype.getResponse = function(){
+	if (this.hasTimeLeft()) return null;
+
 	var topResponse = this.getTopCompletedResponse();
 	if (topResponse && topResponse.goodbye.score >= this.getThreshold()){
 		return topResponse;
 	} else {
 		return null;
 	}
+};
+
+OuijaQuery.prototype.hasTimeLeft = function(){
+	if (!this.config.time) return false;
+
+	var
+		creation = moment.unix(this.post.created_utc),
+		duration = moment.duration('PT' + this.config.time.toUpperCase()),
+		readyTime = creation.add(duration);
+
+	return moment().isBefore(readyTime);
 };
 
 OuijaQuery.prototype.collectResponses = function(comment, letters){

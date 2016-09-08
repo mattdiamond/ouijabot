@@ -11,7 +11,8 @@
     "url": "https://github.com/mattdiamond/ouijabot.git"
   },
   "dependencies": {
-	"snoowrap" : "^1.3.0"
+    "moment": "^2.14.1",
+    "snoowrap": "^1.3.0"
   },
   "author": "Matt Diamond",
   "license": "ISC"
