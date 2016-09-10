@@ -281,7 +281,8 @@ function getBody(comment){
 
 	var body = comment.body;
 	if (body === '[deleted]') return '*';
-	body = body.replace(link, '$1').trim();
+	body = body.replace(link, '$1');
+	body = body.replace('\\', '').trim();
 	if (countSymbols(body) > 1){
 		body = body.replace(/\W/g, '');
 	}
