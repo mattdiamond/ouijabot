@@ -1,3 +1,5 @@
+'use strict';
+
 // ------------- includes ------------------
 var snoowrap = require('snoowrap'),
 	moment = require('moment');
@@ -36,92 +38,94 @@ if (submissionId){
 
 // --------------- classes -----------------
 
-function OuijaQuery(post){
-	this.post = post;
-	this.config = parseConfig(post.selftext);
+class OuijaQuery {
+	constructor(post){
+		this.post = post;
+		this.config = parseConfig(post.selftext);
 
-	this.responses = {
-		complete: [],
-		incomplete: []
-	};
+		this.responses = {
+			complete: [],
+			incomplete: []
+		};
 
-	this.answered = false;
-}
-
-OuijaQuery.prototype.run = function(){
-	for (var comment of this.post.comments){
-		this.collectResponses(comment);
+		this.answered = false;
 	}
 
-	var response = this.getResponse();
-	if (response) this.answered = true;
-	return response;
-};
-
-OuijaQuery.prototype.getTopCompletedResponse = function(){
-	var top = null;
-	this.responses.complete.forEach(response => {
-		if (!top || response.goodbye.score > top.goodbye.score){
-			top = response;
+	run(){
+		for (let comment of this.post.comments){
+			this.collectResponses(comment);
 		}
-	});
-	return top;
-};
 
-OuijaQuery.prototype.getThreshold = function(){
-	return this.config.minscore || COMMENT_SCORE_THRESHOLD;
-};
-
-OuijaQuery.prototype.getResponse = function(){
-	if (this.hasTimeLeft()) return null;
-
-	var topResponse = this.getTopCompletedResponse();
-	if (topResponse && topResponse.goodbye.score >= this.getThreshold()){
-		return topResponse;
-	} else {
-		return null;
+		var response = this.getResponse();
+		if (response) this.answered = true;
+		return response;
 	}
-};
 
-OuijaQuery.prototype.hasTimeLeft = function(){
-	if (!this.config.time) return false;
-
-	var
-		creation = moment.unix(this.post.created_utc),
-		duration = moment.duration('PT' + this.config.time.toUpperCase()),
-		readyTime = creation.add(duration);
-
-	return moment().isBefore(readyTime);
-};
-
-OuijaQuery.prototype.collectResponses = function(comment, letters){
-	var body = getBody(comment),
-		letters = letters || [],
-		hasChildren = false,
-		response;
-
-	if (countSymbols(body) === 1){
-		letters.push(body);
-		for (var reply of comment.replies){
-			response = this.collectResponses(reply, letters);
-			if (response !== INVALID) hasChildren = true;
-		}
-		if (!hasChildren){
-			this.responses.incomplete.push({
-				letters: letters.slice(),
-				lastComment: comment
-			});
-		}
-		letters.pop();
-	} else if (goodbye.test(body)){
-		this.responses.complete.push({
-			letters: letters.slice(),
-			goodbye: comment
+	getTopCompletedResponse(){
+		var top = null;
+		this.responses.complete.forEach(response => {
+			if (!top || response.goodbye.score > top.goodbye.score){
+				top = response;
+			}
 		});
-	} else {
-		return INVALID;
+		return top;
 	}
-};
+
+	get threshold(){
+		return this.config.minscore || COMMENT_SCORE_THRESHOLD;
+	}
+
+	getResponse(){
+		if (this.hasTimeLeft()) return null;
+
+		var topResponse = this.getTopCompletedResponse();
+		if (topResponse && topResponse.goodbye.score >= this.threshold){
+			return topResponse;
+		} else {
+			return null;
+		}
+	}
+
+	hasTimeLeft(){
+		if (!this.config.time) return false;
+
+		var
+			creation = moment.unix(this.post.created_utc),
+			duration = moment.duration('PT' + this.config.time.toUpperCase()),
+			readyTime = creation.add(duration);
+
+		return moment().isBefore(readyTime);
+	}
+
+	collectResponses(comment, letters){
+		var body = getBody(comment),
+			letters = letters || [],
+			hasChildren = false,
+			response;
+
+		if (countSymbols(body) === 1){
+			letters.push(body);
+			for (let reply of comment.replies){
+				response = this.collectResponses(reply, letters);
+				if (response !== INVALID) hasChildren = true;
+			}
+			if (!hasChildren){
+				this.responses.incomplete.push({
+					letters: letters.slice(),
+					lastComment: comment
+				});
+			}
+			letters.pop();
+		} else if (goodbye.test(body)){
+			this.responses.complete.push({
+				letters: letters.slice(),
+				goodbye: comment
+			});
+		} else {
+			return INVALID;
+		}
+	}
+}
 
 // -------------- functions ----------------
 
@@ -152,7 +156,7 @@ function checkReported(){
 }
 
 function reportedIncorrectFlair(post){
-	for (var userReport of post.user_reports){
+	for (let userReport of post.user_reports){
 		if (userReport[0] === 'Missing or Incorrect Flair') return true;
 	}
 
