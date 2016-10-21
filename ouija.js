@@ -150,6 +150,7 @@ function checkReported(){
 		reports.forEach(post => {
 			if (reportedIncorrectFlair(post)){
 				processPost(post);
+				post.approve();
 			}
 		});
 	});
@@ -267,10 +268,6 @@ function updatePostFlair(post, response){
 		console.log('assigned flair: ' + text + ' | ' + post.url);
 
 		notifyUser(post, response);
-
-		if (reportedIncorrectFlair(post)){
-			post.approve();
-		}
 	}
 }
 
