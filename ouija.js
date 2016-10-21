@@ -18,13 +18,12 @@ const config = {
 const
 	EOL = require('os').EOL,
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = process.env.threshold,
-	INVALID = 'invalid';
+	COMMENT_SCORE_THRESHOLD = process.env.threshold;
 
 var
 	r = new snoowrap(config),
 	submissionId = process.argv[2],
-	goodbye = /^GOODBYE/,
+	goodbyeRegex = /^GOODBYE/,
 	link = /\[(.*?)\]\(.*?\)/g;
 
 // -------------- { MAIN } -----------------
@@ -53,7 +52,7 @@ class OuijaQuery {
 
 	run(){
 		for (let comment of this.post.comments){
-			this.collectResponses(comment);
+			this.collectResponses(new OuijaComment(comment));
 		}
 
 		var response = this.getResponse();
@@ -98,16 +97,20 @@ class OuijaQuery {
 	}
 
 	collectResponses(comment, letters){
-		var body = getBody(comment),
-			letters = letters || [],
-			hasChildren = false,
-			response;
+		var letters = letters || [];
 
-		if (countSymbols(body) === 1){
-			letters.push(body);
+		if (comment.type === OuijaComment.Types.Letter){
+			letters.push(comment.body);
+			var childLetters = {}, hasChildren = false;
 			for (let reply of comment.replies){
-				response = this.collectResponses(reply, letters);
-				if (response !== INVALID) hasChildren = true;
+				reply = new OuijaComment(reply);
+				if (reply.type !== OuijaComment.Types.Invalid){
+					this.collectResponses(reply, letters);
+					if (reply.type === OuijaComment.Types.Letter){
+						checkForDuplicate(reply, childLetters);
+					}
+					hasChildren = true;
+				}
 			}
 			if (!hasChildren){
 				this.responses.incomplete.push({
@@ -116,16 +119,51 @@ class OuijaQuery {
 				});
 			}
 			letters.pop();
-		} else if (goodbye.test(body)){
+		} else if (comment.type === OuijaComment.Types.Goodbye){
 			this.responses.complete.push({
 				letters: letters.slice(),
 				goodbye: comment
 			});
-		} else {
-			return INVALID;
 		}
 	}
 }
+
+class OuijaComment {
+	constructor(comment){
+		this.id = comment.id;
+		this.body = getBody(comment);
+
+		this.snooObj = comment;
+
+		if (comment.banned_by){
+			this.type = OuijaComment.Types.Invalid;
+		} else if (countSymbols(body) === 1){
+			this.type = OuijaComment.Types.Letter;
+		} else if (goodbyeRegex.test(body)){
+			this.type = OuijaComment.Types.Goodbye;
+		} else {
+			this.type = OuijaComment.Types.Invalid;
+		}
+	}
+
+	get replies(){
+		return this.snooObj.replies;
+	}
+
+	get created(){
+		return this.snooObj.created_utc;
+	}
+
+	remove(){
+		return this.snooObj.remove();
+	}
+}
+
+OuijaComment.Types = {
+	Letter: 'letter',
+	Goodbye: 'goodbye',
+	Invalid: 'invalid'
+};
 
 // -------------- functions ----------------
 
@@ -305,4 +343,22 @@ function notifyUser(post, response){
 		text,
 		from_subreddit: 'AskOuija'
 	});
+}
+
+function checkForDuplicate(reply, children){
+	var key = reply.body,
+	    existing = children[key];
+
+	if (existing){
+		if (reply.created > existing.created){
+			console.log('removing duplicate: ' + reply.id);
+			reply.remove();
+		} else {
+			console.log('removing duplicate: ' + existing.id);
+			existing.remove();
+			children[key] = reply;
+		}
+	} else {
+		children[key] = reply;
+	}
 }
