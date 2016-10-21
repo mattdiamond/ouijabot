@@ -137,9 +137,9 @@ class OuijaComment {
 
 		if (comment.banned_by){
 			this.type = OuijaComment.Types.Invalid;
-		} else if (countSymbols(body) === 1){
+		} else if (countSymbols(this.body) === 1){
 			this.type = OuijaComment.Types.Letter;
-		} else if (goodbyeRegex.test(body)){
+		} else if (goodbyeRegex.test(this.body)){
 			this.type = OuijaComment.Types.Goodbye;
 		} else {
 			this.type = OuijaComment.Types.Invalid;
