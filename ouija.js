@@ -154,6 +154,10 @@ class OuijaComment {
 		return this.snooObj.created_utc;
 	}
 
+	get score(){
+		return this.snooObj.score;
+	}
+
 	remove(){
 		return this.snooObj.remove();
 	}
