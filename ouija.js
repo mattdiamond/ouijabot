@@ -104,6 +104,12 @@ class OuijaQuery {
 			var childLetters = {}, hasChildren = false;
 			for (let reply of comment.replies){
 				reply = new OuijaComment(reply);
+				
+				if (reply.author.name === comment.author.name){
+					reply.remove();
+					continue;
+				}
+
 				if (reply.type !== OuijaComment.Types.Invalid){
 					this.collectResponses(reply, letters);
 					if (reply.type === OuijaComment.Types.Letter){
@@ -148,6 +154,14 @@ class OuijaComment {
 
 	get replies(){
 		return this.snooObj.replies;
+	}
+
+	hasReplies(){
+		return this.replies.length > 0;
+	}
+
+	get author(){
+		return this.snooObj.author;
 	}
 
 	get created(){
@@ -354,10 +368,10 @@ function checkForDuplicate(reply, children){
 	    existing = children[key];
 
 	if (existing){
-		if (reply.created > existing.created){
+		if (reply.created > existing.created && !reply.hasReplies()){
 			console.log('removing duplicate: ' + reply.id);
 			reply.remove();
-		} else {
+		} else if (!existing.hasReplies()){
 			console.log('removing duplicate: ' + existing.id);
 			existing.remove();
 			children[key] = reply;
