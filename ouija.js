@@ -23,7 +23,7 @@ const
 var
 	r = new snoowrap(config),
 	submissionId = process.argv[2],
-	goodbyeRegex = /^GOODBYE/,
+	goodbyeRegex = /^(GOODBYE|EYBDOOG)/,
 	link = /\[(.*?)\]\(.*?\)/g;
 
 // -------------- { MAIN } -----------------
