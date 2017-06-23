@@ -48,11 +48,19 @@ class OuijaQuery {
 		};
 
 		this.answered = false;
+		this.isMeta = /\[meta\]/i.test(this.post.title);
 	}
 
 	run(){
+		var dupHandler = new CommentDuplicateHandler();
 		for (let comment of this.post.comments){
-			this.collectResponses(new OuijaComment(comment));
+			comment = new OuijaComment(comment);
+			if (comment.type === OuijaComment.Types.Invalid){
+				if (!this.isMeta) comment.remove('invalid');
+				continue;
+			}
+			this.collectResponses(comment);
+			dupHandler.handle(comment);
 		}
 
 		var response = this.getResponse();
@@ -101,22 +109,25 @@ class OuijaQuery {
 
 		if (comment.type === OuijaComment.Types.Letter){
 			letters.push(comment.body);
-			var childLetters = {}, hasChildren = false;
+			var dupHandler = new CommentDuplicateHandler(),
+			    hasChildren = false;
+
 			for (let reply of comment.replies){
 				reply = new OuijaComment(reply);
-				
+
 				if (reply.author.name === comment.author.name){
-					reply.remove();
+					reply.remove('self-reply');
 					continue;
 				}
 
-				if (reply.type !== OuijaComment.Types.Invalid){
-					this.collectResponses(reply, letters);
-					if (reply.type === OuijaComment.Types.Letter){
-						checkForDuplicate(reply, childLetters);
-					}
-					hasChildren = true;
+				if (reply.type === OuijaComment.Types.Invalid){
+					reply.remove('invalid');
+					continue;
 				}
+
+				this.collectResponses(reply, letters);
+				hasChildren = true;
+				dupHandler.handle(reply);
 			}
 			if (!hasChildren){
 				this.responses.incomplete.push({
@@ -142,6 +153,7 @@ class OuijaComment {
 		this.snooObj = comment;
 
 		if (comment.banned_by){
+			this.removed = true;
 			this.type = OuijaComment.Types.Invalid;
 		} else if (countSymbols(this.body) === 1){
 			this.type = OuijaComment.Types.Letter;
@@ -172,7 +184,9 @@ class OuijaComment {
 		return this.snooObj.score;
 	}
 
-	remove(){
+	remove(reason){
+		if (this.removed) return;
+		console.log(`removing reply ${this.id} (reason: ${reason || 'not specified'})`);
 		return this.snooObj.remove();
 	}
 }
@@ -182,6 +196,28 @@ OuijaComment.Types = {
 	Goodbye: 'goodbye',
 	Invalid: 'invalid'
 };
+
+class CommentDuplicateHandler {
+	constructor(){
+		this.comments = {};
+	}
+
+	handle(comment){
+		var key = comment.body,
+		    existing = this.comments[key];
+
+		if (existing){
+			if (comment.created > existing.created && !comment.hasReplies()){
+				comment.remove('duplicate');
+			} else if (!existing.hasReplies()){
+				existing.remove('duplicate');
+				this.comments[key] = comment;
+			}
+		} else {
+			this.comments[key] = comment;
+		}
+	}
+}
 
 // -------------- functions ----------------
 
@@ -361,22 +397,4 @@ function notifyUser(post, response){
 		text,
 		from_subreddit: 'AskOuija'
 	});
-}
-
-function checkForDuplicate(reply, children){
-	var key = reply.body,
-	    existing = children[key];
-
-	if (existing){
-		if (reply.created > existing.created && !reply.hasReplies()){
-			console.log('removing duplicate: ' + reply.id);
-			reply.remove();
-		} else if (!existing.hasReplies()){
-			console.log('removing duplicate: ' + existing.id);
-			existing.remove();
-			children[key] = reply;
-		}
-	} else {
-		children[key] = reply;
-	}
 }
