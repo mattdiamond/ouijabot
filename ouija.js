@@ -17,6 +17,7 @@ const config = {
 
 const
 	EOL = require('os').EOL,
+	SUBREDDIT_NAME = 'AskOuija',
 	OUIJA_RESULT_CLASS = 'ouija-result',
 	COMMENT_SCORE_THRESHOLD = process.env.threshold;
 
@@ -224,7 +225,7 @@ class CommentDuplicateHandler {
 function checkHot(){
 	console.log('checking last 100 hot posts');
 	var processing = [];
-	r.get_hot('AskOuija', { limit: 100 }).then(hot => {
+	r.get_hot(SUBREDDIT_NAME, { limit: 100 }).then(hot => {
 		hot.forEach(post => {
 			if (isUnanswered(post)){
 				processing.push(processPost(post));
@@ -237,7 +238,7 @@ function checkHot(){
 }
 
 function checkReported(){
-	var getReports = r.get_subreddit('AskOuija').get_reports({ only: 'links' });
+	var getReports = r.get_subreddit(SUBREDDIT_NAME).get_reports({ only: 'links' });
 	getReports.then(reports => {
 		reports.forEach(post => {
 			if (reportedIncorrectFlair(post)){
@@ -276,7 +277,7 @@ function processPending(queries){
 		}
 	});
 
-	var wiki = r.get_subreddit('AskOuija').get_wiki_page('unanswered');
+	var wiki = r.get_subreddit(SUBREDDIT_NAME).get_wiki_page('unanswered');
 	wiki.edit({ text });
 }
 
@@ -395,6 +396,6 @@ function notifyUser(post, response){
 		to: post.author,
 		subject: 'THE OUIJA HAS SPOKEN',
 		text,
-		from_subreddit: 'AskOuija'
+		from_subreddit: SUBREDDIT_NAME
 	});
 }
