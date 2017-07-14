@@ -149,7 +149,7 @@ class OuijaQuery {
 class OuijaComment {
 	constructor(comment){
 		this.id = comment.id;
-		this.body = getBody(comment);
+		this.body = this.parseBody(comment.body);
 
 		this.snooObj = comment;
 
@@ -163,6 +163,17 @@ class OuijaComment {
 		} else {
 			this.type = OuijaComment.Types.Invalid;
 		}
+	}
+
+	parseBody(body){
+		if (body === '[deleted]') return '*';
+		body = body.replace(link, '$1');
+		body = body.replace('\\', '').trim();
+		if (countSymbols(body) > 1){
+			body = body.replace(/\W/g, '');
+		}
+		if (body === 'ß') return body;
+		return body.toUpperCase();
 	}
 
 	get replies(){
@@ -368,20 +379,6 @@ function updatePostFlair(post, response){
 //for getting accurate character count even when handling emojis
 function countSymbols(string) {
 	return Array.from(string).length;
-}
-
-function getBody(comment){
-	if (!comment) return null;
-
-	var body = comment.body;
-	if (body === '[deleted]') return '*';
-	body = body.replace(link, '$1');
-	body = body.replace('\\', '').trim();
-	if (countSymbols(body) > 1){
-		body = body.replace(/\W/g, '');
-	}
-	if (body === 'ß') return body;
-	return body.toUpperCase();
 }
 
 function notifyUser(post, response){
