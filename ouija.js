@@ -50,6 +50,7 @@ class OuijaQuery {
 
 		this.answered = false;
 		this.isMeta = /\[meta\]/i.test(this.post.title);
+		this.isModPost = this.post.distinguished === 'moderator';
 	}
 
 	run(){
@@ -57,7 +58,7 @@ class OuijaQuery {
 		for (let comment of this.post.comments){
 			comment = new OuijaComment(comment);
 			if (comment.type === OuijaComment.Types.Invalid){
-				if (!this.isMeta) comment.remove('invalid');
+				if (!this.isMeta && !this.isModPost) comment.remove('invalid');
 				continue;
 			}
 			this.collectResponses(comment);
