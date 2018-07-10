@@ -55,8 +55,7 @@ class OuijaQuery {
 
 	run(){
 		var dupHandler = new CommentDuplicateHandler();
-		for (let comment of this.post.comments){
-			comment = new OuijaComment(comment);
+		for (let comment of this.comments()){
 			if (comment.type === OuijaComment.Types.Invalid){
 				if (!this.isMeta && !this.isModPost) comment.remove('invalid');
 				continue;
@@ -68,6 +67,12 @@ class OuijaQuery {
 		var response = this.getResponse();
 		if (response) this.answered = true;
 		return response;
+	}
+
+	* comments(){
+		for (let comment of this.post.comments){
+			yield new OuijaComment(comment);
+		}
 	}
 
 	getTopCompletedResponse(){
@@ -114,9 +119,7 @@ class OuijaQuery {
 			var dupHandler = new CommentDuplicateHandler(),
 			    hasChildren = false;
 
-			for (let reply of comment.replies){
-				reply = new OuijaComment(reply);
-
+			for (let reply of comment.replies()){
 				if (reply.author.name === comment.author.name){
 					reply.remove('self-reply');
 					continue;
@@ -149,10 +152,8 @@ class OuijaQuery {
 
 class OuijaComment {
 	constructor(comment){
-		this.id = comment.id;
-		this.body = this.parseBody(comment.body);
-
 		this.snooObj = comment;
+		this.body = this.parseBody(comment.body);
 
 		if (comment.banned_by){
 			this.removed = true;
@@ -164,6 +165,11 @@ class OuijaComment {
 		} else {
 			this.type = OuijaComment.Types.Invalid;
 		}
+
+		// add fallback to original comment object
+		return new Proxy(this, {
+			get: (target, prop) => target[prop] || comment[prop]
+		});
 	}
 
 	parseBody(body){
@@ -177,24 +183,18 @@ class OuijaComment {
 		return body.toUpperCase();
 	}
 
-	get replies(){
-		return this.snooObj.replies;
-	}
-
 	hasReplies(){
-		return this.replies.length > 0;
+		return this.snooObj.replies.length > 0;
 	}
 
-	get author(){
-		return this.snooObj.author;
+	* replies() {
+		for (reply of this.snooObj.replies){
+			yield new OuijaComment(reply);
+		}
 	}
 
 	get created(){
 		return this.snooObj.created_utc;
-	}
-
-	get score(){
-		return this.snooObj.score;
 	}
 
 	remove(reason){
@@ -262,11 +262,9 @@ function checkReported(){
 }
 
 function reportedIncorrectFlair(post){
-	for (let userReport of post.user_reports){
-		if (userReport[0] === 'Missing or Incorrect Flair') return true;
-	}
-
-	return false;
+	return post.user_reports.some(report =>
+		report[0] === 'Missing or Incorrect Flair'
+	);
 }
 
 function isUnanswered(post){
