@@ -55,7 +55,7 @@ class OuijaQuery {
 
 	run(){
 		var dupHandler = new CommentDuplicateHandler();
-		for (let comment of this.comments()){
+		for (const comment of this.comments()){
 			if (comment.type === OuijaComment.Types.Invalid){
 				if (!this.isMeta && !this.isModPost) comment.remove('invalid');
 				continue;
@@ -70,7 +70,7 @@ class OuijaQuery {
 	}
 
 	* comments(){
-		for (let comment of this.post.comments){
+		for (const comment of this.post.comments){
 			yield new OuijaComment(comment);
 		}
 	}
@@ -119,7 +119,7 @@ class OuijaQuery {
 			var dupHandler = new CommentDuplicateHandler(),
 			    hasChildren = false;
 
-			for (let reply of comment.replies()){
+			for (const reply of comment.replies()){
 				if (reply.author.name === comment.author.name){
 					reply.remove('self-reply');
 					continue;
@@ -188,7 +188,7 @@ class OuijaComment {
 	}
 
 	* replies() {
-		for (reply of this.snooObj.replies){
+		for (const reply of this.snooObj.replies){
 			yield new OuijaComment(reply);
 		}
 	}
