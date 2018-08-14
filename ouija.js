@@ -114,38 +114,43 @@ class OuijaQuery {
 	collectResponses(comment, letters){
 		var letters = letters || [];
 
-		if (comment.type === OuijaComment.Types.Letter){
-			letters.push(comment.body);
-			var dupHandler = new CommentDuplicateHandler(),
-			    hasChildren = false;
-
-			for (const reply of comment.replies()){
-				if (reply.author.name === comment.author.name){
-					reply.remove('self-reply');
-					continue;
+		switch (comment.type){
+			case OuijaComment.Types.Invalid:
+				comment.remove('invalid');
+				return false;
+			case OuijaComment.Types.Goodbye:
+				if (this.config.minletters && letters.length < this.config.minletters){
+					return false;
 				}
-
-				if (reply.type === OuijaComment.Types.Invalid){
-					reply.remove('invalid');
-					continue;
-				}
-
-				this.collectResponses(reply, letters);
-				hasChildren = true;
-				dupHandler.handle(reply);
-			}
-			if (!hasChildren){
-				this.responses.incomplete.push({
+				this.responses.complete.push({
 					letters: letters.slice(),
-					lastComment: comment
+					goodbye: comment
 				});
-			}
-			letters.pop();
-		} else if (comment.type === OuijaComment.Types.Goodbye){
-			this.responses.complete.push({
-				letters: letters.slice(),
-				goodbye: comment
-			});
+				return true;
+			case OuijaComment.Types.Letter:
+				letters.push(comment.body);
+				var dupHandler = new CommentDuplicateHandler(),
+				    hasChildren = false;
+
+				for (const reply of comment.replies()){
+					if (reply.author.name === comment.author.name){
+						reply.remove('self-reply');
+						continue;
+					}
+
+					if (this.collectResponses(reply, letters)){
+						hasChildren = true;
+					}
+					dupHandler.handle(reply);
+				}
+				if (!hasChildren){
+					this.responses.incomplete.push({
+						letters: letters.slice(),
+						lastComment: comment
+					});
+				}
+				letters.pop();
+				return true;
 		}
 	}
 }
