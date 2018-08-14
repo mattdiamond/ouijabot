@@ -121,7 +121,7 @@ class OuijaQuery {
 					return false;
 				}
 				this.responses.complete.push({
-					letters: letters.slice(),
+					letters,
 					goodbye: comment
 				});
 				return true;
@@ -143,7 +143,7 @@ class OuijaQuery {
 				}
 				if (!hasChildren){
 					this.responses.incomplete.push({
-						letters: letters.slice(),
+						letters,
 						lastComment: comment
 					});
 				}
