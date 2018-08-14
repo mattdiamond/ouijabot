@@ -111,9 +111,7 @@ class OuijaQuery {
 		return moment().isBefore(readyTime);
 	}
 
-	collectResponses(comment, letters){
-		var letters = letters || [];
-
+	collectResponses(comment, letters = []){
 		switch (comment.type){
 			case OuijaComment.Types.Invalid:
 				comment.remove('invalid');
@@ -128,7 +126,7 @@ class OuijaQuery {
 				});
 				return true;
 			case OuijaComment.Types.Letter:
-				letters.push(comment.body);
+				letters = letters.concat(comment.body);
 				var dupHandler = new CommentDuplicateHandler(),
 				    hasChildren = false;
 
@@ -149,7 +147,6 @@ class OuijaQuery {
 						lastComment: comment
 					});
 				}
-				letters.pop();
 				return true;
 		}
 	}
