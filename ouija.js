@@ -24,7 +24,7 @@ const
 var
 	r = new snoowrap(config),
 	submissionId = process.argv[2],
-	goodbyeRegex = /^GOODBYE/,
+	goodbyeRegex = /^GOODBYE\.?$/,
 	link = /\[(.*?)\]\(.*?\)/g;
 
 // -------------- { MAIN } -----------------
@@ -379,6 +379,8 @@ function updatePostFlair(post, response){
 //awesome workaround from https://mathiasbynens.be/notes/javascript-unicode
 //for getting accurate character count even when handling emojis
 function countSymbols(string) {
+	// Do not count emoji variations and modifiers, http://unicode.org/reports/tr51/index.html
+	string = string.replace(/[\u{20E0}\u{20E3}\u{FE0E}\u{FE0F}\u{1F3FB}-\u{1F3FF}]/ug,'');
 	return Array.from(string).length;
 }
 
