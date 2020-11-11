@@ -11,7 +11,8 @@
     "url": "https://github.com/mattdiamond/ouijabot.git"
   },
   "dependencies": {
-    "moment": "^2.14.1",
+    "grapheme-splitter": "^1.0.4",
+    "moment": "^2.24.0",
     "snoowrap": "^1.3.0"
   },
   "author": "Matt Diamond",
