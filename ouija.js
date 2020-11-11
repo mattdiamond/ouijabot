@@ -1,8 +1,10 @@
 'use strict';
 
 // ------------- includes ------------------
-var snoowrap = require('snoowrap'),
-	moment = require('moment');
+const
+	snoowrap = require('snoowrap'),
+	moment = require('moment'),
+	GraphemeSplitter = require('grapheme-splitter');
 
 // -------------- config -------------------
 const config = {
@@ -19,10 +21,10 @@ const
 	EOL = require('os').EOL,
 	SUBREDDIT_NAME = 'AskOuija',
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = process.env.threshold;
+	COMMENT_SCORE_THRESHOLD = process.env.threshold,
 
-var
 	r = new snoowrap(config),
+	splitter = new GraphemeSplitter(),
 	submissionId = process.argv[2],
 	goodbyeRegex = /^GOODBYE/,
 	link = /\[(.*?)\]\(.*?\)/g;
@@ -53,20 +55,31 @@ class OuijaQuery {
 		this.isModPost = this.post.distinguished === 'moderator';
 	}
 
-	run(){
+	async run (){
 		var dupHandler = new CommentDuplicateHandler();
+		await this.fetchComments();
 		for (const comment of this.comments()){
 			if (comment.type === OuijaComment.Types.Invalid){
 				if (!this.isMeta && !this.isModPost) comment.remove('invalid');
 				continue;
 			}
-			this.collectResponses(comment);
+			await this.collectResponses(comment);
 			dupHandler.handle(comment);
 		}
 
 		var response = this.getResponse();
 		if (response) this.answered = true;
 		return response;
+	}
+
+	fetchComments () {
+		if (this.post.comments.isFinished) {
+			return;
+		}
+
+		return this.post.comments.fetchAll().then(comments => {
+			this.post.comments = comments;
+		});
 	}
 
 	* comments(){
@@ -111,7 +124,7 @@ class OuijaQuery {
 		return moment().isBefore(readyTime);
 	}
 
-	collectResponses(comment, letters = []){
+	async collectResponses(comment, letters = []){
 		switch (comment.type){
 			case OuijaComment.Types.Invalid:
 				comment.remove('invalid');
@@ -130,6 +143,7 @@ class OuijaQuery {
 				var dupHandler = new CommentDuplicateHandler(),
 				    hasChildren = false;
 
+				await comment.fetchReplies();
 				for (const reply of comment.replies()){
 					if (reply.author.name === comment.author.name){
 						reply.remove('self-reply');
@@ -189,6 +203,15 @@ class OuijaComment {
 		return this.snooObj.replies.length > 0;
 	}
 
+	fetchReplies () {
+		if (this.snooObj.replies.isFinished) {
+			return;
+		}
+		return this.snooObj.replies.fetchAll().then(replies => {
+			this.snooObj.replies = replies;
+		});
+	}
+
 	* replies() {
 		for (const reply of this.snooObj.replies){
 			yield new OuijaComment(reply);
@@ -238,21 +261,18 @@ class CommentDuplicateHandler {
 
 function checkHot(){
 	console.log('checking last 100 hot posts');
-	var processing = [];
-	r.get_hot(SUBREDDIT_NAME, { limit: 100 }).then(hot => {
-		hot.forEach(post => {
-			if (isUnanswered(post)){
-				processing.push(processPost(post));
-			}
-		});
-		Promise.all(processing).then(processPending).catch(err => {
-			console.error(err);
-		});
-	});
+	r.getHot(SUBREDDIT_NAME, { limit: 100 })
+		.then(posts => {
+			return Promise.all(
+				posts.filter(isUnanswered).map(processPost)
+			);
+		})
+		.then(processPending)
+		.catch(console.error);
 }
 
 function checkReported(){
-	var getReports = r.get_subreddit(SUBREDDIT_NAME).get_reports({ only: 'links' });
+	const getReports = r.getSubreddit(SUBREDDIT_NAME).getReports({ only: 'links' });
 	getReports.then(reports => {
 		reports.forEach(post => {
 			if (reportedIncorrectFlair(post)){
@@ -274,7 +294,7 @@ function isUnanswered(post){
 }
 
 function processPending(queries){
-	var text = '';
+	let text = '';
 
 	queries.reverse().forEach(query => {
 		if (query.answered) return;
@@ -289,12 +309,12 @@ function processPending(queries){
 		}
 	});
 
-	var wiki = r.get_subreddit(SUBREDDIT_NAME).get_wiki_page('unanswered');
+	const wiki = r.getSubreddit(SUBREDDIT_NAME).getWikiPage('unanswered');
 	wiki.edit({ text });
 }
 
 function createPendingWikiMarkdown(query){
-	var markdown = '#### Pending' + EOL;
+	let markdown = '#### Pending' + EOL;
 	markdown += 'Letters | Score' + EOL;
 	markdown += '--------|------' + EOL;
 	query.responses.complete.forEach(pending => {
@@ -323,17 +343,19 @@ function createIncompleteWikiMarkdown(query){
 }
 
 function processPost(post){
-	return post.expand_replies().then(runQuery);
+	return post.fetch().then(runQuery);
+	// return post.expand_replies().then(runQuery);
 }
 
-function runQuery(post){
-	var query = new OuijaQuery(post);
+async function runQuery(post){
+	const query = new OuijaQuery(post);
 
-	var response = query.run();
+	const response = await query.run();
+
 	if (response){
 		updatePostFlair(post, response);
 	} else if (post.link_flair_text !== 'unanswered') {
-		post.assign_flair({
+		post.assignFlair({
 			text: 'unanswered',
 			css_class: 'unanswered'
 		});
@@ -364,7 +386,7 @@ function updatePostFlair(post, response){
 	if (post.link_flair_text == text){
 		console.log('confirmed flair: ' + text);
 	} else {
-		post.assign_flair({
+		post.assignFlair({
 			text,
 			css_class: OUIJA_RESULT_CLASS
 		}).catch(err => {
@@ -376,10 +398,8 @@ function updatePostFlair(post, response){
 	}
 }
 
-//awesome workaround from https://mathiasbynens.be/notes/javascript-unicode
-//for getting accurate character count even when handling emojis
 function countSymbols(string) {
-	return Array.from(string).length;
+	return splitter.countGraphemes(string);
 }
 
 function notifyUser(post, response){
@@ -390,7 +410,7 @@ function notifyUser(post, response){
 	text += EOL;
 	text += `**Ouija says:** [${answer}](${url})`;
 
-	r.compose_message({
+	r.composeMessage({
 		to: post.author,
 		subject: 'THE OUIJA HAS SPOKEN',
 		text,
