@@ -23,7 +23,7 @@ jobs:
     - run: npm install
     - run: node ouija.js
       env:
-        client_id: $CLIENT_ID
-        client_secret: ${{secrets.CLIENT_SECRET}}
-        username: $USERNAME
-        password: ${{secrets.PASSWORD}}
+        CLIENT_ID: ${{vars.CLIENT_ID}}
+        CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
+        USERNAME: ${{vars.USERNAME}}
+        PASSWORD: ${{secrets.PASSWORD}}
