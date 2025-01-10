@@ -21,4 +21,5 @@ jobs:
       with:
         node-version: 'latest'
         cache: 'npm'
+    - run: npm install
     - run: node ouija.js
