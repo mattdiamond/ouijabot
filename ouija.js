@@ -8,10 +8,10 @@ const
 
 // -------------- config -------------------
 const config = {
-	client_id: process.env.client_id,
-	client_secret: process.env.client_secret,
-	username: process.env.username,
-	password: process.env.password,
+	client_id: process.env.CLIENT_ID,
+	client_secret: process.env.CLIENT_SECRET,
+	username: process.env.USERNAME,
+	password: process.env.PASSWORD,
 	user_agent: 'OuijaBot'
 };
 
@@ -21,7 +21,7 @@ const
 	EOL = require('os').EOL,
 	SUBREDDIT_NAME = 'AskOuija',
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = process.env.threshold,
+	COMMENT_SCORE_THRESHOLD = process.env.THRESHOLD,
 
 	r = new snoowrap(config),
 	splitter = new GraphemeSplitter(),
