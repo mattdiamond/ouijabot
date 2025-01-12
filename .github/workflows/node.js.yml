@@ -4,9 +4,13 @@
 name: Node.js CI
 
 on:
-  schedule:
-    - cron: '0 * * * *'
+  # schedule:
+  #   - cron: '0 * * * *'
   workflow_dispatch:
+    inputs:
+      submissionId:
+        description: 'ID of specific post to process'
+        type: string
 
 jobs:
   build:
@@ -21,7 +25,7 @@ jobs:
         node-version: 'latest'
         cache: 'npm'
     - run: npm install
-    - run: node ouija.js
+    - run: node ouija.js ${{inputs.submissionId}}
       env:
         CLIENT_ID: ${{vars.CLIENT_ID}}
         CLIENT_SECRET: ${{secrets.CLIENT_SECRET}}
