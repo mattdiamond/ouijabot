@@ -21,7 +21,7 @@ const
 	EOL = require('os').EOL,
 	SUBREDDIT_NAME = 'AskOuija',
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = process.env.THRESHOLD,
+	COMMENT_SCORE_THRESHOLD = process.env.THRESHOLD ?? 10,
 
 	r = new snoowrap(config),
 	splitter = new GraphemeSplitter(),
