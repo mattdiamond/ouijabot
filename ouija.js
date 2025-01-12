@@ -22,6 +22,7 @@ const
 	SUBREDDIT_NAME = 'AskOuija',
 	OUIJA_RESULT_CLASS = 'ouija-result',
 	COMMENT_SCORE_THRESHOLD = process.env.THRESHOLD ?? 10,
+	LIMIT = process.env.LIMIT ?? 50,
 
 	r = new snoowrap(config),
 	splitter = new GraphemeSplitter(),
@@ -32,9 +33,9 @@ const
 // -------------- { MAIN } -----------------
 
 if (submissionId){
-	processPost(r.get_submission(submissionId));
+	processPost(r.getSubmission(submissionId));
 } else {
-	checkHot();
+	checkHot(LIMIT);
 	checkReported();
 }
 
@@ -259,9 +260,13 @@ class CommentDuplicateHandler {
 
 // -------------- functions ----------------
 
-function checkHot(){
-	console.log('checking last 100 hot posts');
-	r.getHot(SUBREDDIT_NAME, { limit: 100 })
+function checkHot(limit){
+	if (limit == null) {
+		throw new Error('No limit specified');
+	}
+
+	console.log(`checking last ${limit} hot posts`);
+	r.getHot(SUBREDDIT_NAME, { limit })
 		.then(posts => {
 			return Promise.all(
 				posts.filter(isUnanswered).map(processPost)
