@@ -148,7 +148,7 @@ class OuijaQuery {
 				await comment.fetchReplies();
 				for (const reply of comment.replies()){
 					if (await isSelfReplyThread(reply, comment)){
-						await killThread(reply);
+						await killThread(reply, 'self-reply');
 						continue;
 					}
 
@@ -168,14 +168,14 @@ class OuijaQuery {
 	}
 }
 
-async function killThread(comment){
+async function killThread(comment, reason){
 	await comment.fetchReplies();
 
 	for (const reply of comment.replies()){
-		await killThread(reply);
+		await killThread(reply, reason);
 	}
 
-	await comment.remove('self-reply');
+	await comment.remove(reason);
 }
 
 async function isSelfReplyThread(comment, parent){
