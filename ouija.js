@@ -21,8 +21,8 @@ const
 	EOL = require('os').EOL,
 	SUBREDDIT_NAME = 'AskOuija',
 	OUIJA_RESULT_CLASS = 'ouija-result',
-	COMMENT_SCORE_THRESHOLD = process.env.THRESHOLD ?? 10,
-	LIMIT = process.env.LIMIT ?? 50,
+	COMMENT_SCORE_THRESHOLD = Number(process.env.THRESHOLD ?? 10),
+	LIMIT = Number(process.env.LIMIT ?? 50),
 	DELETE_DUPLICATES = false,
 
 	r = new snoowrap(config),
@@ -251,7 +251,7 @@ class OuijaComment {
 
 	remove(reason){
 		if (this.removed) return;
-		console.log(`removing reply ${this.id} (reason: ${reason || 'not specified'})`);
+		console.log(`removing reply: ${this.permalink} (reason: ${reason || 'not specified'})`);
 		return this.snooObj.remove();
 	}
 }
