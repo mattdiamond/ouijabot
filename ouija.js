@@ -23,6 +23,7 @@ const
 	OUIJA_RESULT_CLASS = 'ouija-result',
 	COMMENT_SCORE_THRESHOLD = process.env.THRESHOLD ?? 10,
 	LIMIT = process.env.LIMIT ?? 50,
+	DELETE_DUPLICATES = false,
 
 	r = new snoowrap(config),
 	splitter = new GraphemeSplitter(),
@@ -141,13 +142,13 @@ class OuijaQuery {
 				return true;
 			case OuijaComment.Types.Letter:
 				letters = letters.concat(comment.body);
-				var dupHandler = new CommentDuplicateHandler(),
-				    hasChildren = false;
+				const dupHandler = new CommentDuplicateHandler();
+				let hasChildren = false;
 
 				await comment.fetchReplies();
 				for (const reply of comment.replies()){
-					if (reply.author.name === comment.author.name){
-						reply.remove('self-reply');
+					if (await isSelfReplyThread(reply, comment)){
+						await killThread(reply);
 						continue;
 					}
 
@@ -167,10 +168,32 @@ class OuijaQuery {
 	}
 }
 
+async function killThread(comment){
+	await comment.fetchReplies();
+	for (const reply of comment.replies()){
+		await killThread(reply);
+	}
+	await comment.remove('self-reply');
+}
+
+async function isSelfReplyThread(reply, parent){
+	if (reply.author.name !== parent.author.name) return false;
+
+	await reply.fetchReplies();
+
+	for (const r of reply.replies()){
+		if (!(await isSelfReplyThread(r, parent))){
+			return false;
+		}
+	}
+	return true;
+}
+
 class OuijaComment {
 	constructor(comment){
 		this.snooObj = comment;
 		this.body = this.parseBody(comment.body);
+		this.repliesFetched = false;
 
 		if (comment.banned_by){
 			this.removed = true;
@@ -205,11 +228,12 @@ class OuijaComment {
 	}
 
 	fetchReplies () {
-		if (this.snooObj.replies.isFinished) {
+		if (this.repliesFetched || this.snooObj.replies.isFinished) {
 			return;
 		}
 		return this.snooObj.replies.fetchAll().then(replies => {
 			this.snooObj.replies = replies;
+			this.repliesFetched = true;
 		});
 	}
 
@@ -242,6 +266,8 @@ class CommentDuplicateHandler {
 	}
 
 	handle(comment){
+		if (!DELETE_DUPLICATES) return;
+
 		var key = comment.body,
 		    existing = this.comments[key];
 
