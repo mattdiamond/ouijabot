@@ -170,19 +170,21 @@ class OuijaQuery {
 
 async function killThread(comment){
 	await comment.fetchReplies();
+
 	for (const reply of comment.replies()){
 		await killThread(reply);
 	}
+
 	await comment.remove('self-reply');
 }
 
-async function isSelfReplyThread(reply, parent){
-	if (reply.author.name !== parent.author.name) return false;
+async function isSelfReplyThread(comment, parent){
+	if (comment.author.name !== parent.author.name) return false;
 
-	await reply.fetchReplies();
+	await comment.fetchReplies();
 
-	for (const r of reply.replies()){
-		if (!(await isSelfReplyThread(r, parent))){
+	for (const reply of comment.replies()){
+		if (!(await isSelfReplyThread(reply, parent))){
 			return false;
 		}
 	}
