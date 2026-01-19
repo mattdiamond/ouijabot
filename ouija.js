@@ -28,7 +28,7 @@ const
 	r = new snoowrap(config),
 	splitter = new GraphemeSplitter(),
 	submissionId = process.argv[2],
-	goodbyeRegex = /^GOODBYE/,
+	goodbyeRegex = /^(GOODBYE|EYBDOOG)/,
 	link = /\[(.*?)\]\(.*?\)/g;
 
 // -------------- { MAIN } -----------------
